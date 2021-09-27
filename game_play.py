@@ -1,7 +1,11 @@
-# BOARD PRINTED
-# BOARD WITH NUMBERS DISPLAYED
-# 
+# Python script for game rules
 
+# Dependencies
+import math
+import time
+from all_players import AiComputer, HumanPlayer, NormalComputer
+
+# Main function
 class PlayGame():
     def __init__(self):
         self.board = self.boardDesign()
@@ -10,7 +14,7 @@ class PlayGame():
     @staticmethod
     def boardDesign():
         # -  -  -
-        return ["-" for _ in range(9)]
+        return [" " for _ in range(9)]
 
     def printBoard(self):
         # |  |  |  |
@@ -24,58 +28,85 @@ class PlayGame():
         for row in number_board:
             print('| ' + ' | '.join(row) + ' |')
 
-    def handleTurn(self, position, letter):
-        if self.board[position] == "-":
-            self.board[position] = letter
-            if self.winningPlayer(position, letter):
-                self.actualWinner = letter
+    # If there's an available position, assign the current player's chosenLetter
+    def handleTurn(self, position, chosenLetter):
+        if self.board[position] == " ":
+            self.board[position] = chosenLetter
+            if self.winningPlayer(position, chosenLetter):
+                self.actualWinner = chosenLetter
             return True
-        return False ###  <<< --- REVISAR POR QUÉ FALSE
-    
-    def winningPlayer(self, position, letter):
-        # Winning Row
-        winning_row1 = position[0] == position[1] == position[2] != "-"
-        winning_row2 = position[3] == position[4] == position[5] != "-"
-        winning_row3 = position[6] == position[7] == position[8] != "-"
-        if all([letter == letter in winning_row1, winning_row2, winning_row3]):
-            return True
-        if winning_row1:
-            return position[0]
-        if winning_row2:
-            return position[3]
-        if winning_row3:
-            return position[6]
-        # Winning Column
-        winning_col1 = position[0] == position[3] == position[6] != "-"
-        winning_col2 = position[1] == position[4] == position[7] != "-"
-        winning_col3 = position[2] == position[5] == position[8] != "-"
-        if all([letter == letter in winning_col1, winning_col2, winning_col3]):
-            return True
-        if winning_col1:
-            return position[0]
-        if winning_col2:
-            return position[1]
-        if winning_col3:
-            return position[2]
-        # Winning Diagonal
-        winning_diagonal1 = position[0] == position[4] == position[8] != "-"
-        winning_diagonal2 = position[6] == position[4] == position[2] != "-"
-        if all([letter == letter in winning_diagonal1, winning_diagonal2]):
-            return True
-        if winning_diagonal1:
-            return position[0]
-        if winning_diagonal2:
-            return position[6]
+        return False
 
-    def empty_squares(self): ###---> REVISAR!
+    # Defining winning conditions
+    def winningPlayer(self, position, chosenLetter):
+        # check the row
+        row_ind = math.floor(position / 3)
+        row = self.board[row_ind*3:(row_ind+1)*3]
+        # print('row', row)
+        if all([s == chosenLetter for s in row]):
+            return True
+        col_ind = position % 3
+        column = [self.board[col_ind+i*3] for i in range(3)]
+        # print('col', column)
+        if all([s == chosenLetter for s in column]):
+            return True
+        if position % 2 == 0:
+            diagonal1 = [self.board[i] for i in [0, 4, 8]]
+            # print('diag1', diagonal1)
+            if all([s == chosenLetter for s in diagonal1]):
+                return True
+            diagonal2 = [self.board[i] for i in [2, 4, 6]]
+            # print('diag2', diagonal2)
+            if all([s == chosenLetter for s in diagonal2]):
+                return True
+        return False  
+
+    # Empty positions available for utility function
+    def empty_positions(self):
         return ' ' in self.board
-
-    def num_empty_squares(self): ###---> REVISAR!
+    
+    # Count number of empty positions available for utility function
+    def num_empty_positions(self):
         return self.board.count(' ')
 
-    def available_moves(self): ###---> REVISAR!
+    # Returning position number of empty spots
+    def available_moves(self):
         return [i for i, x in enumerate(self.board) if x == " "]
 
-def GameInitiation(ticTac, Xplayer, Oplayer, StartGame = True):
+# Assigning turns to X and O and stating actualWinner
+def GameInitiation(ticTac, Xplayer, Oplayer, StartGame=True):
+    if StartGame:
+        ticTac.printBoardNumbers()
 
-### PASAR A all_players
+    # X is always the first to play
+    chosenLetter = "X"
+    while ticTac.empty_positions():
+        if chosenLetter == "O":
+            position = Oplayer.handleTurn(ticTac)
+        else:
+            position = Xplayer.handleTurn(ticTac)
+        if ticTac.handleTurn(position, chosenLetter):
+            # Printing into terminal position taken
+            if StartGame:
+                print("Assigned position {} to ".format(position) + chosenLetter)
+                ticTac.printBoard()
+                print("")
+            # Winner
+            if ticTac.actualWinner:
+                if StartGame:
+                    print(chosenLetter + " wins the game :D !!")
+                return chosenLetter
+            chosenLetter = "O" if chosenLetter == "X" else "X"
+        # Timelapse
+        time.sleep(.30)
+    # If no more empty positions
+    if StartGame:
+        print("Draw! No one wins")
+
+# Start the game- select players
+# AiComputer, HumanPlayer, NormalComputer
+if __name__ == '__main__':
+    Xplayer = AiComputer("X")
+    Oplayer = HumanPlayer("O")
+    g = PlayGame()
+    GameInitiation(g, Xplayer, Oplayer, StartGame=True)
